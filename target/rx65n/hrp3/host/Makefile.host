@@ -1,0 +1,16 @@
+#
+#  iSotEE
+#
+
+REAL_PWD := $(dir $(lastword $(MAKEFILE_LIST)))
+
+# Add this folder to HRP3 source tree
+INCLUDES := $(INCLUDES) -I$(REAL_PWD)
+SYSSVC_DIRS := $(SYSSVC_DIRS) $(REAL_PWD)
+
+SYSSVC_COBJS += isotee_host.obj isotee_driver_r_ether_rx.obj
+KERNEL_ASMOBJS += isotee_host_asm.obj
+
+CFG_TABS := $(CFG_TABS) --symval-table $(REAL_PWD)/isotee_sym.def
+
+TARGET_OFFSET_TRB = $(REAL_PWD)/isotee_offset.trb

@@ -1,0 +1,13 @@
+# -*- coding: utf-8 -*-
+
+#
+#  コア依存部のインクルード
+#
+IncludeTrb("core_offset.trb")
+
+$offsetH.append(<<EOS)
+; iSotEE macros
+SUPPORT_ISOTEE .equ #{$SUPPORT_ISOTEE}
+ISOTEE_GUEST_MAX_IPL .equ #{$ISOTEE_GUEST_MAX_IPL}
+ISOTEE_VIRTUAL_INTERRUPT_NUMBER .equ #{$ISOTEE_VIRTUAL_INTERRUPT_NUMBER}
+EOS

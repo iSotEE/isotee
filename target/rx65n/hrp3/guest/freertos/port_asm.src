@@ -1,0 +1,46 @@
+;
+; Copyright (c) 2019 Yixiao Li <liyixiao7@gmail.com>
+;
+; SPDX-License-Identifier: Apache-2.0
+;
+
+	.glb	_pxCurrentTCB
+	.glb	_vTaskSwitchContext
+	.glb	_vPortYieldInCritical
+	.glb	_prvStartFirstTask
+	.glb	_isotee_para_context
+	.glb	_ucPortInterruptHandler
+
+	.section	P, CODE
+
+;
+; Save context and switch to a new task
+;
+; Preconditions:
+; 1. In critical section
+; 2. Return PC is on top of the stack
+; 3. Caller-saved registers can be clobbered
+;
+_vPortYieldInCritical:
+	; store callee-saved registers
+	pushm	r6-r13
+
+	; save the stack pointer to TCB
+	mov.l	#_pxCurrentTCB, r1
+	mov.l	[r1], r1
+	mov.l	sp, [r1]
+
+	; switch TCB to next task
+	bsr		_vTaskSwitchContext
+
+_prvStartFirstTask: ; TODO: other target-depend initialization may need
+	; load the stack pointer from new TCB
+	mov.l	#_pxCurrentTCB, r1
+	mov.l	[r1], r1
+	mov.l	[r1], sp
+
+	; restore context and return
+	popm	r6-r13
+	rts
+
+	.end

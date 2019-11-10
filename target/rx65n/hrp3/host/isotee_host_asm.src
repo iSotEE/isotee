@@ -1,0 +1,75 @@
+;
+; Copyright (c) 2019 Yixiao Li <liyixiao7@gmail.com>
+;
+; SPDX-License-Identifier: Apache-2.0
+;
+
+	.include	offset.h
+
+	.glb	_isotee_guest_ipl
+	.glb	_isotee_guest_interrupt_status
+
+	.section	P_OBJ_libkernel, CODE
+
+;	.glb	_isotee_svc_para_interrupt_enable
+;_isotee_svc_para_interrupt_enable:
+;	mov.l	4[sp], r1					; saved PSW -> r1
+;	mov.l	#_isotee_guest_ipl, r3
+;	mov.l	#0, [r3]
+;	mov.l	r1, r2
+;	and		#PSW_IPL_MASK, r2
+;	cmp		#ISOTEE_GUEST_MAX_IPL, r2
+;	stz		#0, r2						; new IPL -> r2
+;	and		#~PSW_IPL_MASK, r1
+;	or		r2, r1						; new PSW -> r1
+;	mov.l	r1, 4[sp]
+;	rte
+
+	.glb	_isotee_svc_para_interrupt_enable
+_isotee_svc_para_interrupt_enable:
+	mov.b	7[sp], r1					; saved IPL (PSW[24:]) -> r1
+	mov.l	#_isotee_guest_ipl, r3
+	mov.l	#0, [r3]
+	cmp		#(ISOTEE_GUEST_MAX_IPL >> 24), r1
+	stz		#0, r1						; new IPL -> r1
+	mov.b	r1, 7[sp]
+	rte
+
+;	.glb	_isotee_svc_para_interrupt_disable
+;_isotee_svc_para_interrupt_disable:
+;	mov.l	4[sp], r1					; saved PSW -> r1
+;	mov.l	#_isotee_guest_ipl, r3
+;	mov.l	#ISOTEE_GUEST_MAX_IPL, [r3]
+;	mov.l	r1, r2
+;	and		#~PSW_IPL_MASK, r2
+;	or		#ISOTEE_GUEST_MAX_IPL, r2
+;	max		r2, r1						; new PSW -> r1
+;	mov.l	r1, 4[sp]
+;	rte
+
+	.glb	_isotee_svc_para_interrupt_disable
+_isotee_svc_para_interrupt_disable:
+	mov.b	7[sp], r1					; saved IPL (PSW[24:]) -> r1
+	mov.l	#_isotee_guest_ipl, r3
+	mov.l	#ISOTEE_GUEST_MAX_IPL, [r3]
+	max		#(ISOTEE_GUEST_MAX_IPL >> 24), r1
+	mov.b	r1, 7[sp]					; new IPL -> r1 -> PSW
+	rte
+
+	.glb	_isotee_svc_para_interrupt_poll
+_isotee_svc_para_interrupt_poll:
+	mov.l	#_isotee_guest_interrupt_status, r1
+	mov.l	#0, r2
+	mov.l	#ISOTEE_VIRTUAL_INTERRUPT_NUMBER, r3
+	swhile.b
+	mov.l	#ISOTEE_VIRTUAL_INTERRUPT_NUMBER, r2
+	stz		r2, r1
+	beq		_isotee_svc_para_interrupt_poll_return
+	sub		#1, r1
+	mov.b	#0, [r1]
+	mov.l	#_isotee_guest_interrupt_status, r2
+	sub		r2, r1
+_isotee_svc_para_interrupt_poll_return:
+	rte
+
+	.end
