@@ -44,7 +44,7 @@ extsvc_isotee_para_initialize(intptr_t interrupt_handler, intptr_t par2, intptr_
 	isotee_guest_context.interrupt_suppressed = &isotee_guest_interrupt_suppressed;
 	memset(isotee_guest_interrupt_status, 0, sizeof(isotee_guest_interrupt_status));
 	isotee_guest_tick(0);
-	sta_cyc(ISOTEE_GUEST_TICK);
+	sta_cyc(ISOTEE_GUEST_TICK_CYC);
 	return((ER_UINT) &isotee_guest_context);
 }
 

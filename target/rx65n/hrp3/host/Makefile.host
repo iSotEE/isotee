@@ -14,4 +14,4 @@ KERNEL_ASMOBJS += isotee_host_asm.obj
 CDEFS := $(CDEFS) -DSUPPORT_ISOTEE=1
 CFG_TABS := $(CFG_TABS) --symval-table $(REAL_PWD)/isotee_sym.def
 
-TARGET_OFFSET_TRB = $(REAL_PWD)/isotee_offset.trb
+TARGET_OFFSET_TRB := $(REAL_PWD)/isotee_offset.trb
