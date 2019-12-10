@@ -95,13 +95,13 @@ extern UBaseType_t uxCriticalNesting;
 #include "../../para/isotee_para.h"
 #include "../../para/isotee_syscall.h"
 
-static inline void portENABLE_INTERRUPTS( void ) {	/* Use function instead of macro for calling conventions */
-	__int_exception(SVC_PARA_INTERRUPT_ENABLE);
-}
-
-static inline void portDISABLE_INTERRUPTS( void ) {	/* Use function instead of macro for calling conventions */
-	__int_exception(SVC_PARA_INTERRUPT_DISABLE);
-}
+#if 1 /* Use interrupt-suppressed critical section */
+#define portENABLE_INTERRUPTS() isotee_para_interrupt_suppress_off();isotee_para_interrupt_pending_check()
+#define portDISABLE_INTERRUPTS() isotee_para_interrupt_suppress_on()
+#else /* Use interrupt-disabled critical section */
+#define portENABLE_INTERRUPTS() isotee_para_interrupt_enable()
+#define portDISABLE_INTERRUPTS() isotee_para_interrupt_disable()
+#endif
 
 #ifdef __cplusplus
 }

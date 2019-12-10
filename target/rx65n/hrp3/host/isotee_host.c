@@ -26,6 +26,7 @@ isotee_para_context_t isotee_guest_context;
 
 #pragma section B B_ISOTEE_SHARED_RW
 uint8_t isotee_guest_interrupt_suppressed;
+uint8_t isotee_guest_interrupt_pending;
 #pragma section
 
 uint32_t isotee_guest_ipl = ISOTEE_GUEST_MAX_IPL;
@@ -41,7 +42,9 @@ extsvc_isotee_para_initialize(intptr_t interrupt_handler, intptr_t par2, intptr_
 {
 	isotee_guest_interrupt_handler = (void*)interrupt_handler;
 	isotee_guest_interrupt_suppressed = 1;
+	isotee_guest_interrupt_pending = 0;
 	isotee_guest_context.interrupt_suppressed = &isotee_guest_interrupt_suppressed;
+	isotee_guest_context.interrupt_pending = &isotee_guest_interrupt_pending;
 	memset(isotee_guest_interrupt_status, 0, sizeof(isotee_guest_interrupt_status));
 	isotee_guest_tick(0);
 	sta_cyc(ISOTEE_GUEST_TICK_CYC);
@@ -60,6 +63,7 @@ void modify_trap_frame() {
 		}
 		isotee_guest_itfp = NULL;
 	}
+	isotee_guest_interrupt_pending = 1;
 	SIL_UNL_INT();
 }
 

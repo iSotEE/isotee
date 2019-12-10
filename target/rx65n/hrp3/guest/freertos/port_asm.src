@@ -9,9 +9,12 @@
 	.glb	_vPortYieldInCritical
 	.glb	_prvStartFirstTask
 	.glb	_isotee_para_context
+	.glb	_isotee_para_guest_interrupt_handler
+	.glb	_isotee_para_interrupt_pending_handler
 	.glb	_ucPortInterruptHandler
+	.glb	_prvPortInterruptReturn
 
-	.section	P, CODE
+	.section	P_ASM, CODE
 
 ;
 ; Save context and switch to a new task
@@ -42,5 +45,43 @@ _prvStartFirstTask: ; TODO: other target-depend initialization may need
 	; restore context and return
 	popm	r6-r13
 	rts
+
+;
+; Entry point of interrupt handler
+;
+; Preconditions:
+; 1) Interrupted task was NOT in any critical section
+; 2) In interrupt-suppressed critical section NOW
+;
+_isotee_para_guest_interrupt_handler:
+	;
+	; push following registers:
+	; saved_pc -> caller-saved (r1-r5, r14-r15) -> psw -> fpsw -> acc
+	;
+	pushm	r1-r6
+	mov.l	#_isotee_para_context, r1
+	mov.l	[r1], r1
+	mov.l	[r1], 20[sp]	; replace 'r6' in stack with 'saved_pc'
+_isotee_para_interrupt_pending_handler:
+	pushm	r14-r15
+	pushc	psw
+	pushc	fpsw
+.if __RXV2 == 1
+	mvfaclo	#0, A1, r5
+	mvfachi	#0, A1, r4
+	mvfacgu	#0, A1, r3
+	pushm	r3-r5			; ACC1
+	mvfaclo	#0, A0, r5
+	mvfachi	#0, A0, r4
+	mvfacgu	#0, A0, r3
+	pushm	r3-r5			; ACC0
+.else
+	#error "Unsupported ISA"
+.endif
+
+	bsr		_ucPortInterruptHandler
+	cmp		#0, r1
+	beq		_prvPortInterruptReturn
+	bsr		_vPortYieldInCritical
 
 	.end

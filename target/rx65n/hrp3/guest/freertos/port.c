@@ -55,10 +55,10 @@ uint8_t ucPortInterruptHandler( void ) {
 			extern void EINT_Trig_isr(void *ectrl);
 			EINT_Trig_isr(NULL);
 		}
-		if (i == 0) portDISABLE_INTERRUPTS();
+		if (i == 0) isotee_para_interrupt_disable();
 	}
 
-	uint32_t new_cycles = isotee_timer_read_cycles() - prev_cycles;
+	uint32_t new_cycles = isotee_para_timer_read() - prev_cycles;
 	while (new_cycles >= ISOTEE_CYCLES_PER_MS) {
 		if (xTaskIncrementTick() != pdFALSE && xYieldOnExitCritical == pdFALSE) {
 			xYieldOnExitCritical = pdTRUE;
@@ -67,50 +67,21 @@ uint8_t ucPortInterruptHandler( void ) {
 		new_cycles -= ISOTEE_CYCLES_PER_MS;
 		prev_cycles += ISOTEE_CYCLES_PER_MS;
 	}
-	*(isotee_para_context->interrupt_suppressed) = 0;
+	isotee_para_interrupt_suppress_off();
+	isotee_para_interrupt_pending_clear();
 	return (xYieldOnExitCritical != pdFALSE);
 }
 
 /**
- * Entry point of interrupt handler
+ * Return to a task from interrupt handler
  *
  * Preconditions:
  * 1) Interrupted task was NOT in any critical section
- * 2) In interrupt-suppressed critical section NOW
+ * 2) In interrupt-disabled critical section NOW
  */
-#pragma inline_asm prvInterruptEntry
-static void prvInterruptEntry( void ) {
-	;
-	; push following registers:
-	; saved_pc -> caller-saved (r1-r5, r14-r15) -> psw -> fpsw -> acc
-	;
-	pushm	r1-r6
-	mov.l	#_isotee_para_context, r1
-	mov.l	[r1], r1
-	mov.l	[r1], 20[sp]	; replace 'r6' in stack with 'saved_pc'
-	pushm	r14-r15
-	pushc	psw
-	pushc	fpsw
-#if defined(__RXV2)
-	mvfaclo	#0, A1, r5
-	mvfachi	#0, A1, r4
-	mvfacgu	#0, A1, r3
-	pushm	r3-r5			; ACC1
-	mvfaclo	#0, A0, r5
-	mvfachi	#0, A0, r4
-	mvfacgu	#0, A0, r3
-	pushm	r3-r5			; ACC0
-#else
-	#error "Unsupported ISA"
-#endif
-
-	bsr		_ucPortInterruptHandler
-	cmp		#0, r1
-	beq		_prvPortInterruptReturn
-	bsr		_vPortYieldInCritical
-
-	; Return to a task from interrupt handler
-_prvPortInterruptReturn:
+#pragma section P P_ASM
+#pragma inline_asm prvPortInterruptReturn
+void prvPortInterruptReturn( void ) {
 	int		#SVC_PARA_INTERRUPT_ENABLE
 #if defined(__RXV2)
 	popm	r3-r5						; ACC0
@@ -129,24 +100,20 @@ _prvPortInterruptReturn:
 	popm	r14-r15
 	popm	r1-r5
 }
+#pragma section
 
 BaseType_t xPortStartScheduler( void ) {
-	extern void vPortInterruptEntry();
-	isotee_para_initialize(prvInterruptEntry);
+	isotee_para_initialize();
 
-	prev_cycles = isotee_timer_read_cycles();
+	prev_cycles = isotee_para_timer_read();
 
-	*(isotee_para_context->interrupt_suppressed) = 0;
+	isotee_para_interrupt_suppress_off();
+	isotee_para_interrupt_pending_clear();
 
 	extern void prvStartFirstTask();
 	prvStartFirstTask();
 
 	/* Should not get here. */
-
-	if (xPortStartScheduler == (void*)0x1 && xPortStartScheduler != (void*)0x1) {
-		/* Symbol references to make compiler happy */
-		vPortYieldInCritical();
-	}
 
 	return pdFAIL;
 }

@@ -23,7 +23,7 @@ extern const volatile isotee_para_context_t* isotee_para_context;
  *
  * @param interrupt_handler function address of the common interrupt handler
  */
-void isotee_para_initialize(void *interrupt_handler);
+void isotee_para_initialize();
 
 /**
  * Enable the virtual interrupt controller.
@@ -41,13 +41,23 @@ void isotee_para_interrupt_disable();
  * Enter interrupt-suppressed critical section.
  * Suppress incoming interrupt requests.
  */
-void isotee_para_interrupt_suppress();
+void isotee_para_interrupt_suppress_on();
 
 /**
  * Exit interrupt-suppressed critical section.
- * Switch to interrupt handler for suppressed requests if interrupt enabled.
  */
-void isotee_para_interrupt_activate();
+void isotee_para_interrupt_suppress_off();
+
+/**
+ * Switch to interrupt handler if pending interrupts exist.
+ * Must be called outside critical section.
+ */
+void isotee_para_interrupt_pending_check();
+
+/**
+ * Clear interrupt pending status.
+ */
+void isotee_para_interrupt_pending_clear();
 
 /**
  * Mask an interrupt.
@@ -71,4 +81,9 @@ isotee_irq_t isotee_para_interrupt_poll();
  * Read the monotonic virtual timer
  * @return count value in cycles
  */
-uint32_t isotee_timer_read_cycles();
+uint32_t isotee_para_timer_read();
+
+/**
+ * Interrupt handler should be provided by guest OS.
+ */
+void isotee_para_guest_interrupt_handler();

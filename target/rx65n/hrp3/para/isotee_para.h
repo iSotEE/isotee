@@ -9,20 +9,18 @@
 typedef struct {
 /* Readonly variables */
 	void*    saved_pc;			/* MUST be first field */
-	uint8_t  interrupt_enabled;
 	uint32_t timer_cycles;
 /* Writable variables */
 	uint8_t* interrupt_suppressed;
+	uint8_t* interrupt_pending;
 } isotee_para_context_t;
 
 #include "../../../isotee_para_common.h"
 
 #define ISOTEE_CYCLES_PER_MS			(7500U)
 
-#pragma inline isotee_timer_read_cycles
-static uint32_t isotee_timer_read_cycles() {
-	return isotee_para_context->timer_cycles;
-}
+extern volatile uint8_t* isotee_para_context_interrupt_suppressed;
+extern volatile uint8_t* isotee_para_context_interrupt_pending;
 
 #define SVC_PARA_INTERRUPT_ENABLE		3
 #define SVC_PARA_INTERRUPT_DISABLE		4
@@ -47,7 +45,40 @@ static uint32_t isotee_timer_read_cycles() {
 #define TFN_ISOTEE_DRIVER_R_ETHER_LinkProcess			(36)
 #define TFN_ISOTEE_DRIVER_R_ETHER_CheckWrite			(37)
 
-
-static inline isotee_irq_t isotee_para_interrupt_poll() {	/* Use function instead of macro for calling conventions */
-	__int_exception(SVC_PARA_INTERRUPT_POLL);
+#pragma inline_asm isotee_para_interrupt_enable
+static void isotee_para_interrupt_enable() { /* Use inline_asm instead of macro for calling conventions */
+	int #SVC_PARA_INTERRUPT_ENABLE
 }
+
+#pragma inline_asm isotee_para_interrupt_disable
+static void isotee_para_interrupt_disable() { /* Use inline_asm instead of macro for calling conventions */
+	int #SVC_PARA_INTERRUPT_DISABLE
+}
+
+#pragma inline isotee_para_interrupt_suppress_on
+static void isotee_para_interrupt_suppress_on() {
+	*isotee_para_context_interrupt_suppressed = 1U;
+}
+
+#pragma inline isotee_para_interrupt_suppress_off
+static void isotee_para_interrupt_suppress_off() {
+	*isotee_para_context_interrupt_suppressed = 0U;
+}
+
+#pragma inline isotee_para_interrupt_pending_clear
+static void isotee_para_interrupt_pending_clear() {
+	*isotee_para_context_interrupt_pending = 0U;
+}
+
+void isotee_para_interrupt_pending_handler();
+
+#pragma inline_asm isotee_para_interrupt_poll
+static isotee_irq_t isotee_para_interrupt_poll() { /* Use inline_asm instead of macro for calling conventions */
+	int #SVC_PARA_INTERRUPT_POLL
+}
+
+#pragma inline isotee_para_timer_read
+static uint32_t isotee_para_timer_read() {
+	return isotee_para_context->timer_cycles;
+}
+
