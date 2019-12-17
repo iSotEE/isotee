@@ -17,7 +17,14 @@
  */
 #pragma inline_asm prvPortTaskFirstExec
 static void prvPortTaskFirstExec( void ) {
+#if defined(USE_INTERRUPT_SUPPRESSED_CRITICAL_SECTION)
+	mov.l	#_isotee_para_context_interrupt_suppressed, r1
+	mov.l	[r1], r1
+	mov.l	#0, [r1]
+	bsr		_isotee_para_interrupt_pending_check
+#else
 	int		#SVC_PARA_INTERRUPT_ENABLE
+#endif
 	mov.l	r7, r1
 	jsr		r6
 _vPortTaskFirstExec_exit:
@@ -42,33 +49,34 @@ static uint32_t prev_cycles;
  * 1) In interrupt-suppressed critical section
  *
  * Postconditions:
- * 1) In interrupt-disabled critical section
+ * 1) In task critical section (i.e. portENTER_CRITICAL)
  *
  * @return 0 if no need to yield
  */
 uint8_t ucPortInterruptHandler( void ) {
+#if !defined(USE_INTERRUPT_SUPPRESSED_CRITICAL_SECTION)
+	isotee_para_interrupt_disable();
+	isotee_para_interrupt_suppress_off();
+#endif
+	isotee_para_interrupt_pending_clear();
 
-	for (int i = 0; i < 2; i++) {
-		while (1) {
-			isotee_irq_t irq = isotee_para_interrupt_poll();
-			if (irq >= ISOTEE_VIRTUAL_INTERRUPT_NUMBER) break;
-			extern void EINT_Trig_isr(void *ectrl);
-			EINT_Trig_isr(NULL);
-		}
-		if (i == 0) isotee_para_interrupt_disable();
+	isotee_irq_t irq;
+	while ((irq = isotee_para_interrupt_poll()) < ISOTEE_VIRTUAL_INTERRUPT_NUMBER) {
+		((void (*)(void)) isotee_isr_table[irq])();
 	}
 
-	uint32_t new_cycles = isotee_para_timer_read() - prev_cycles;
+	uint32_t tmp_cycles = prev_cycles;
+	uint32_t new_cycles = isotee_para_timer_read() - tmp_cycles;
 	while (new_cycles >= ISOTEE_CYCLES_PER_MS) {
-		if (xTaskIncrementTick() != pdFALSE && xYieldOnExitCritical == pdFALSE) {
+		if (xTaskIncrementTick() != pdFALSE) {
+			// if (xYieldOnExitCritical == pdFALSE) uart_string_printf("iSotEE xYieldOnExitCritical pdTRUE in IRQ\n");
 			xYieldOnExitCritical = pdTRUE;
-			uart_string_printf("iSotEE xYieldOnExitCritical pdTRUE in IRQ\n");
 		}
 		new_cycles -= ISOTEE_CYCLES_PER_MS;
-		prev_cycles += ISOTEE_CYCLES_PER_MS;
+		tmp_cycles += ISOTEE_CYCLES_PER_MS;
 	}
-	isotee_para_interrupt_suppress_off();
-	isotee_para_interrupt_pending_clear();
+	prev_cycles = tmp_cycles;
+
 	return (xYieldOnExitCritical != pdFALSE);
 }
 
@@ -82,7 +90,14 @@ uint8_t ucPortInterruptHandler( void ) {
 #pragma section P P_ASM
 #pragma inline_asm prvPortInterruptReturn
 void prvPortInterruptReturn( void ) {
+#if defined(USE_INTERRUPT_SUPPRESSED_CRITICAL_SECTION)
+	mov.l	#_isotee_para_context_interrupt_suppressed, r1
+	mov.l	[r1], r1
+	mov.l	#0, [r1]
+	bsr		_isotee_para_interrupt_pending_check
+#else
 	int		#SVC_PARA_INTERRUPT_ENABLE
+#endif
 #if defined(__RXV2)
 	popm	r3-r5						; ACC0
 	mvtaclo	r5, A0
@@ -107,23 +122,23 @@ BaseType_t xPortStartScheduler( void ) {
 
 	prev_cycles = isotee_para_timer_read();
 
+#if defined(USE_INTERRUPT_SUPPRESSED_CRITICAL_SECTION)
+	isotee_para_interrupt_suppress_on();
+	isotee_para_interrupt_enable();
+#else
+	isotee_para_interrupt_disable();
 	isotee_para_interrupt_suppress_off();
-	isotee_para_interrupt_pending_clear();
+#endif
 
 	extern void prvStartFirstTask();
 	prvStartFirstTask();
 
 	/* Should not get here. */
 
+	if (xPortStartScheduler == (void*)0x1 && xPortStartScheduler != (void*)0x1) {
+		/* Symbol references to make compiler happy */
+		isotee_para_interrupt_pending_check();
+	}
+
 	return pdFAIL;
-}
-
-
-long write(long fileno, const unsigned char *buf, long count) {
-	/* NOT SUPPORTED BY DEFAULT */
-	/* unused */ ((void)fileno);
-	/* unused */ ((void)buf);
-	/* unused */ ((void)count);
-    vAssertCalled();
-	return -1;
 }

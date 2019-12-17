@@ -95,7 +95,11 @@ extern UBaseType_t uxCriticalNesting;
 #include "../../para/isotee_para.h"
 #include "../../para/isotee_syscall.h"
 
-#if 1 /* Use interrupt-suppressed critical section */
+extern void* const isotee_isr_table[ISOTEE_VIRTUAL_INTERRUPT_NUMBER];
+
+#define USE_INTERRUPT_SUPPRESSED_CRITICAL_SECTION
+
+#if defined(USE_INTERRUPT_SUPPRESSED_CRITICAL_SECTION)
 #define portENABLE_INTERRUPTS() isotee_para_interrupt_suppress_off();isotee_para_interrupt_pending_check()
 #define portDISABLE_INTERRUPTS() isotee_para_interrupt_suppress_on()
 #else /* Use interrupt-disabled critical section */
