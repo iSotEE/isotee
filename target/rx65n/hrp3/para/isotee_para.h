@@ -24,15 +24,16 @@ extern volatile uint8_t* isotee_para_context_interrupt_pending;
 
 #define SVC_PARA_INTERRUPT_ENABLE		3
 #define SVC_PARA_INTERRUPT_DISABLE		4
-//#define SVC_PARA_INTERRUPT_MASK			5
-//#define SVC_PARA_INTERRUPT_UNMASK		6
+#define SVC_PARA_INTERRUPT_MASK			5
+#define SVC_PARA_INTERRUPT_UNMASK		6
 #define SVC_PARA_INTERRUPT_POLL			7
 
 /**
  * Virtual interrupts
  */
 #define ISOTEE_VIRTUAL_INTERRUPT_R_ETHER	0
-#define ISOTEE_VIRTUAL_INTERRUPT_NUMBER		1
+#define ISOTEE_VIRTUAL_INTERRUPT_TEST_SWINT	1
+#define ISOTEE_VIRTUAL_INTERRUPT_NUMBER		2
 
 
 #define TFN_ISOTEE_PARA_INITIALIZE	(30)
@@ -71,6 +72,16 @@ static void isotee_para_interrupt_pending_clear() {
 }
 
 void isotee_para_interrupt_pending_handler();
+
+#pragma inline_asm isotee_para_interrupt_mask
+static void isotee_para_interrupt_mask(isotee_irq_t irq) { /* Use inline_asm instead of macro for calling conventions */
+	int #SVC_PARA_INTERRUPT_MASK
+}
+
+#pragma inline_asm isotee_para_interrupt_unmask
+static void isotee_para_interrupt_unmask(isotee_irq_t irq) { /* Use inline_asm instead of macro for calling conventions */
+	int #SVC_PARA_INTERRUPT_UNMASK
+}
 
 #pragma inline_asm isotee_para_interrupt_poll
 static isotee_irq_t isotee_para_interrupt_poll() { /* Use inline_asm instead of macro for calling conventions */

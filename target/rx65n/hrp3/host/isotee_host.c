@@ -37,6 +37,11 @@ uint8_t  isotee_guest_interrupt_status[ISOTEE_VIRTUAL_INTERRUPT_NUMBER];
 
 TCB* const isotee_guest_tcb = get_tcb(ISOTEE_GUEST_TASK);
 
+const uint32_t isotee_guest_interrupt_intno[ISOTEE_VIRTUAL_INTERRUPT_NUMBER] = {
+	[ISOTEE_VIRTUAL_INTERRUPT_R_ETHER] = INTNO_R_ETHER,
+	[ISOTEE_VIRTUAL_INTERRUPT_TEST_SWINT] = INT_SWINT2
+};
+
 ER_UINT
 extsvc_isotee_para_initialize(intptr_t interrupt_handler, intptr_t par2, intptr_t par3, intptr_t par4, intptr_t par5, ID cdmid)
 {
@@ -73,48 +78,14 @@ void isotee_guest_tick(intptr_t exinf) {
 }
 
 void isotee_guest_inject_interrupt(uint32_t virtual_interrupt) {
-	if (isotee_guest_ipl != 0) { // For debug
+#if 0 // For debug
+	if (isotee_guest_ipl != 0) {
 		syslog(LOG_NOTICE, "isotee_guest_ipl != 0");
 		while(1);
 	}
+#endif
 
+	disable_int(isotee_guest_interrupt_intno[virtual_interrupt]);
 	isotee_guest_interrupt_status[virtual_interrupt] = 1;
 	modify_trap_frame();
 }
-
-/*
-void isotee_guest_tick(intptr_t exinf) {
-	if (isotee_guest_itfp != NULL) {
-		if (!isotee_guest_interrupt_suppressed && isotee_guest_ipl == 0) {
-//			syslog(LOG_NOTICE, "timer modify itfp");
-			isotee_guest_context.saved_pc = isotee_guest_itfp->pc;
-			isotee_guest_itfp->pc = isotee_guest_interrupt_handler;
-			isotee_guest_interrupt_suppressed = 1;
-		}
-		isotee_guest_itfp = NULL;
-	}
-	isotee_guest_context.timer_cycles = sil_rew_mem((void*)CMTW0_CMWCNT_ADDR);
-	sta_alm(ISOTEE_GUEST_TICK, 100U * 1000U);
-}
-
-
-void isotee_guest_inject_interrupt(uint32_t virtual_interrupt) {
-	isotee_guest_interrupt_status[virtual_interrupt] = 1;
-	SIL_PRE_LOC;
-	SIL_LOC_INT();
-	if (isotee_guest_itfp != NULL) {
-		if (!isotee_guest_interrupt_suppressed) {
-//			syslog(LOG_NOTICE, "virtual int modify itfp");
-			if (isotee_guest_ipl != 0) {
-				syslog(LOG_NOTICE, "isotee_guest_ipl != 0");
-			}
-			isotee_guest_context.saved_pc = isotee_guest_itfp->pc;
-			isotee_guest_itfp->pc = isotee_guest_interrupt_handler;
-			isotee_guest_interrupt_suppressed = 1;
-		}
-		isotee_guest_itfp = NULL;
-	}
-	SIL_UNL_INT();
-
-}
-*/

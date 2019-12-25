@@ -8,22 +8,9 @@
 
 	.glb	_isotee_guest_ipl
 	.glb	_isotee_guest_interrupt_status
+	.glb	_isotee_guest_interrupt_intno
 
 	.section	P_OBJ_libkernel, CODE
-
-;	.glb	_isotee_svc_para_interrupt_enable
-;_isotee_svc_para_interrupt_enable:
-;	mov.l	4[sp], r1					; saved PSW -> r1
-;	mov.l	#_isotee_guest_ipl, r3
-;	mov.l	#0, [r3]
-;	mov.l	r1, r2
-;	and		#PSW_IPL_MASK, r2
-;	cmp		#ISOTEE_GUEST_MAX_IPL, r2
-;	stz		#0, r2						; new IPL -> r2
-;	and		#~PSW_IPL_MASK, r1
-;	or		r2, r1						; new PSW -> r1
-;	mov.l	r1, 4[sp]
-;	rte
 
 	.glb	_isotee_svc_para_interrupt_enable
 _isotee_svc_para_interrupt_enable:
@@ -35,18 +22,6 @@ _isotee_svc_para_interrupt_enable:
 	mov.b	r1, 7[sp]
 	rte
 
-;	.glb	_isotee_svc_para_interrupt_disable
-;_isotee_svc_para_interrupt_disable:
-;	mov.l	4[sp], r1					; saved PSW -> r1
-;	mov.l	#_isotee_guest_ipl, r3
-;	mov.l	#ISOTEE_GUEST_MAX_IPL, [r3]
-;	mov.l	r1, r2
-;	and		#~PSW_IPL_MASK, r2
-;	or		#ISOTEE_GUEST_MAX_IPL, r2
-;	max		r2, r1						; new PSW -> r1
-;	mov.l	r1, 4[sp]
-;	rte
-
 	.glb	_isotee_svc_para_interrupt_disable
 _isotee_svc_para_interrupt_disable:
 	mov.b	7[sp], r1					; saved IPL (PSW[24:]) -> r1
@@ -54,6 +29,38 @@ _isotee_svc_para_interrupt_disable:
 	mov.l	#ISOTEE_GUEST_MAX_IPL, [r3]
 	max		#(ISOTEE_GUEST_MAX_IPL >> 24), r1
 	mov.b	r1, 7[sp]					; new IPL -> r1 -> PSW
+	rte
+
+	.glb	_isotee_svc_para_interrupt_mask
+_isotee_svc_para_interrupt_mask:
+	cmp		#ISOTEE_VIRTUAL_INTERRUPT_NUMBER, r1
+	bgeu	_isotee_svc_para_interrupt_mask_return
+	shll	#2, r1
+	add		#_isotee_guest_interrupt_intno, r1
+	mov.l	[r1], r1					; intno -> r1
+	shlr	#3, r1, r2
+	add		#ICU_IERm_ADDR, r2
+	mov.b	[r2], r3					; *ICU_IERm_ADDR -> r3
+	and		#7, r1
+	bclr	r1, r3
+	mov.b	r3, [r2]					; disable_int
+_isotee_svc_para_interrupt_mask_return:
+	rte
+
+	.glb	_isotee_svc_para_interrupt_unmask
+_isotee_svc_para_interrupt_unmask:
+	cmp		#ISOTEE_VIRTUAL_INTERRUPT_NUMBER, r1
+	bgeu	_isotee_svc_para_interrupt_unmask_return
+	shll	#2, r1
+	add		#_isotee_guest_interrupt_intno, r1
+	mov.l	[r1], r1					; intno -> r1
+	shlr	#3, r1, r2
+	add		#ICU_IERm_ADDR, r2
+	mov.b	[r2], r3					; *ICU_IERm_ADDR -> r3
+	and		#7, r1
+	bset	r1, r3
+	mov.b	r3, [r2]					; enable_int
+_isotee_svc_para_interrupt_unmask_return:
 	rte
 
 	.glb	_isotee_svc_para_interrupt_poll

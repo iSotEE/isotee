@@ -97,7 +97,7 @@ extern UBaseType_t uxCriticalNesting;
 
 extern void* const isotee_isr_table[ISOTEE_VIRTUAL_INTERRUPT_NUMBER];
 
-#define USE_INTERRUPT_SUPPRESSED_CRITICAL_SECTION
+//#define USE_INTERRUPT_SUPPRESSED_CRITICAL_SECTION
 
 #if defined(USE_INTERRUPT_SUPPRESSED_CRITICAL_SECTION)
 #define portENABLE_INTERRUPTS() isotee_para_interrupt_suppress_off();isotee_para_interrupt_pending_check()

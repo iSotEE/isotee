@@ -8,6 +8,9 @@
 #include "task.h"
 #include "../../para/isotee_para.h"
 
+UBaseType_t uxCriticalNesting = 0;
+BaseType_t	xYieldOnExitCritical = pdFALSE;
+
 /**
  * First execution of a task (after pxPortInitialiseStack)
  *
@@ -54,15 +57,13 @@ static uint32_t prev_cycles;
  * @return 0 if no need to yield
  */
 uint8_t ucPortInterruptHandler( void ) {
-#if !defined(USE_INTERRUPT_SUPPRESSED_CRITICAL_SECTION)
 	isotee_para_interrupt_disable();
-	isotee_para_interrupt_suppress_off();
-#endif
 	isotee_para_interrupt_pending_clear();
 
 	isotee_irq_t irq;
 	while ((irq = isotee_para_interrupt_poll()) < ISOTEE_VIRTUAL_INTERRUPT_NUMBER) {
 		((void (*)(void)) isotee_isr_table[irq])();
+		isotee_para_interrupt_unmask(irq);
 	}
 
 	uint32_t tmp_cycles = prev_cycles;
@@ -76,6 +77,12 @@ uint8_t ucPortInterruptHandler( void ) {
 		tmp_cycles += ISOTEE_CYCLES_PER_MS;
 	}
 	prev_cycles = tmp_cycles;
+
+#if defined(USE_INTERRUPT_SUPPRESSED_CRITICAL_SECTION)
+	isotee_para_interrupt_enable();
+#else
+	isotee_para_interrupt_suppress_off();
+#endif
 
 	return (xYieldOnExitCritical != pdFALSE);
 }
