@@ -25,8 +25,9 @@ void vPortEndScheduler(void) {
 
 extern void EINT_Trig_isr();
 
+void *test_interrupt_handler;
+
 static void test_swint_isr() {
-	extern void *test_interrupt_handler;
 	((void (*)(void)) test_interrupt_handler)();
 }
 
