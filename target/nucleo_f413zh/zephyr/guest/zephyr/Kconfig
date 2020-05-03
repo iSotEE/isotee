@@ -1,0 +1,11 @@
+# Kconfig - Config options for iSotEE
+#
+# Copyright (c) 2020 Yixiao Li <liyixiao7@gmail.com>
+#
+# SPDX-License-Identifier: Apache-2.0
+#
+
+config ISOTEE_GUEST
+    bool "Build as iSotEE guest software"
+	depends on !ARM_MPU
+    default y
