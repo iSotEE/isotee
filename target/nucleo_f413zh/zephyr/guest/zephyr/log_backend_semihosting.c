@@ -11,25 +11,21 @@
 #include <device.h>
 #include <assert.h>
 
-#define SYS_WRITEC (0x3U)
+static __attribute__((optimize(0)))
 int32_t _semihosting_call(uint32_t service, void *op1) {
     __asm__("bkpt #0xab");
 }
 
-static int char_out(u8_t *data, size_t length, void *ctx)
-{
-	struct device *dev = (struct device *)ctx;
-
-	for (size_t i = 0; i < length; i++) {
-        _semihosting_call(SYS_WRITEC, &data[i]);
-	}
-
-	return length;
+static int char_out(u8_t *data, size_t length, void *ctx) {
+    ARG_UNUSED(ctx);
+    uint32_t params[3] = {2 /*stderr*/, data, length};
+    _semihosting_call(0x5 /*SYS_WRITE*/, params);
+    return length;
 }
 
-static u8_t buf;
+static u8_t buf[64];
 
-LOG_OUTPUT_DEFINE(log_output, char_out, &buf, 1);
+LOG_OUTPUT_DEFINE(log_output, char_out, buf, 64);
 
 static void put(const struct log_backend *const backend,
 		struct log_msg *msg)

@@ -21,6 +21,7 @@
 _ASM_FILE_PROLOGUE
 
 GTEXT(__swap)
+GTEXT(isotee_para_guest_interrupt_handler)
 GTEXT(__return_from_irq)
 GDATA(_k_neg_eagain)
 
@@ -137,6 +138,31 @@ TODO: OR-FOR-CORTEX-V7
     mov sp, ip
 
     pop {pc}
+
+/**
+ * Entry point of interrupt handler
+ *
+ * Preconditions:
+ * 1) Interrupted task was NOT in any critical section
+ * 2) In interrupt-suppressed critical section NOW
+ */
+SECTION_FUNC(TEXT, isotee_para_guest_interrupt_handler)
+	/**
+	 * push following registers:
+	 * saved_pc -> caller-saved (r0-r3, ip/r12, lr/r14) -> xPSR
+	 */
+
+    push {r0}   /* allocate space for 'pc' */
+    push {r0-r3, ip, lr}
+    mrs r0, APSR
+    push {r0}
+    ldr r0, =isotee_para_context
+    ldr r0, [r0]
+    ldr r0, [r0]
+    str r0, [sp, #28] /* replace 'pc' in stack with 'saved_pc' */
+
+    bl z_interrupt_handler
+    bl __swap // TODO: need optimization
 
 SECTION_FUNC(TEXT, __return_from_irq)
     pop {r0}
