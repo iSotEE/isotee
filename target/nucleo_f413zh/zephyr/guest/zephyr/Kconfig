@@ -7,5 +7,5 @@
 
 config ISOTEE_GUEST
     bool "Build as iSotEE guest software"
-	depends on !ARM_MPU
+	depends on !ARM_MPU && !FP_SHARING
     default y
