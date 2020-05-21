@@ -5,7 +5,15 @@
 # SPDX-License-Identifier: Apache-2.0
 #
 
-config ISOTEE_GUEST
+menuconfig ISOTEE_GUEST
     bool "Build as iSotEE guest software"
 	depends on !ARM_MPU && !FP_SHARING
     default y
+
+if ISOTEE_GUEST
+
+config ISOTEE_GUEST_USE_INTERRUPT_SUPPRESSED_CRITICAL_SECTION
+    bool "iSotEE guest tasks use interrupt-suppressed critical section"
+    default y
+
+endif

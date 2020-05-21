@@ -81,9 +81,15 @@ swap_from_irq:
     movs.n r3, #0
     str r3, [r2, #_thread_offset_to_basepri]
 
+#if defined(CONFIG_ISOTEE_GUEST_USE_INTERRUPT_SUPPRESSED_CRITICAL_SECTION)
     ldr r1, =isotee_para_context_interrupt_suppressed
     ldr r1, [r1]
     strb r0, [r1]
+#else
+    cmp r0, #0
+    IT EQ
+    svceq #BARE_METAL_HYPERCALL_INTERRUPT_ENABLE
+#endif
 
     pop {pc}
 
@@ -141,10 +147,14 @@ SECTION_FUNC(TEXT, isotee_para_guest_interrupt_handler)
     b swap_from_irq
 
 SECTION_FUNC(TEXT, unlock_and_return_from_irq)
+#if defined(CONFIG_ISOTEE_GUEST_USE_INTERRUPT_SUPPRESSED_CRITICAL_SECTION)
     mov r0, #0 /* the irq lock key of _current is always 0 */
     ldr r1, =isotee_para_context_interrupt_suppressed
     ldr r1, [r1]
     strb r0, [r1]
+#else
+    svc #BARE_METAL_HYPERCALL_INTERRUPT_ENABLE
+#endif
 __return_from_irq:
     pop {r0}
     msr APSR_nzcvq, r0
