@@ -10,28 +10,19 @@
 #include "isotee_para.h"
 
 static const uint32_t physical_irqn_to_virtual[CONFIG_NUM_IRQS] = {
-    [I2C3_ER_IRQn] = ISOTEE_VIRTUAL_INTERRUPT_I2C3_ER
+    [I2C3_ER_IRQn] = ISOTEE_VIRTUAL_INTERRUPT_I2C3_ER,
+    [OTG_FS_IRQn] = ISOTEE_VIRTUAL_INTERRUPT_OTG_FS
 };
 
 void z_arch_irq_enable(unsigned int irq)
 {
-    //TODO: mask
-	//NVIC_EnableIRQ((IRQn_Type)irq);
+    isotee_para_interrupt_unmask(physical_irqn_to_virtual[irq]);
 }
 
-#if 0 // TODO: support this
 void z_arch_irq_disable(unsigned int irq)
 {
-    //TODO: unmask
-	//NVIC_DisableIRQ((IRQn_Type)irq);
+    isotee_para_interrupt_mask(physical_irqn_to_virtual[irq]);
 }
-
-int z_arch_irq_is_enabled(unsigned int irq)
-{
-    //TODO: check
-	//return NVIC->ISER[REG_FROM_IRQ(irq)] & BIT(BIT_FROM_IRQ(irq));
-}
-#endif
 
 void z_irq_priority_set(unsigned int irq, unsigned int prio, u32_t flags)
 {
@@ -45,12 +36,4 @@ void z_irq_priority_set(unsigned int irq, unsigned int prio, u32_t flags)
 void z_irq_spurious(void *unused)
 {
 	ARG_UNUSED(unused);
-    // TODO: LOG_ERR
 }
-
-#if 0 // TODO: support this
-void z_arch_isr_direct_header(void)
-{
-	z_sys_trace_isr_enter();
-}
-#endif

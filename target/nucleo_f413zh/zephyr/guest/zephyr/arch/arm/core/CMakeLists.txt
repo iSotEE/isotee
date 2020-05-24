@@ -12,7 +12,6 @@ zephyr_library_sources(
   exc_exit.S
   irq_init.c
   fault.c
-  cpu_idle.S
   fault_s.S
   fatal.c
   sys_fatal_error_handler.c

@@ -115,7 +115,13 @@ SECTION_FUNC(TEXT, isotee_para_guest_interrupt_handler)
     ldr r0, [r0]
     str r0, [sp, #28] /* replace 'pc' in stack with 'saved_pc' */
 
+    mov r0, sp
+    ldr sp, =_interrupt_stack + CONFIG_ISR_STACK_SIZE
+    push {r0}
+
     bl z_interrupt_handler
+
+    ldr sp, [sp]
 
     /* check if we should swap */
     ldr r1, =_kernel
