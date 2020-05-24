@@ -5,6 +5,7 @@
  */
 
 #include <stdint.h>
+#include <stddef.h>
 #include "isotee_para.h"
 #include "isotee_syscall.h"
 

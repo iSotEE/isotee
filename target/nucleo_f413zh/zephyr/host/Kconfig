@@ -1,0 +1,52 @@
+# Kconfig - Config options for iSotEE
+#
+# Copyright (c) 2020 Yixiao Li <liyixiao7@gmail.com>
+#
+# SPDX-License-Identifier: Apache-2.0
+#
+
+menuconfig SUPPORT_ISOTEE
+    bool "iSotEE Hypervisor Middleware"
+	depends on ARMV7_M_ARMV8_M_MAINLINE && USERSPACE  && !APPLICATION_DEFINED_SYSCALL
+    default y
+
+if SUPPORT_ISOTEE
+
+config ISOTEE_GUEST_IRQ_PRIO
+	int "Interrupt priority for guest"
+    default 14 if SOC_SERIES_STM32F4X
+
+config ISOTEE_HOST_PENDSV_PRIO
+	int "Interrupt prioriy for host PendSV"
+    default 13 if SOC_SERIES_STM32F4X
+    help
+     Must be higher (smaller) than ISOTEE_GUEST_IRQ_PRIO
+
+config ISOTEE_BARE_METAL_HYPERCALL_MIN_SVC
+	int "Minimal SVC number for bare metal hypercalls"
+    default 4
+
+config ISOTEE_BARE_METAL_HYPERCALL_NUM
+	int "Number of bare metal hypercalls"
+    default 4
+
+config ISOTEE_GUEST_MSEC_PER_TICK
+	int "Period of guest system tick"
+    default 1
+
+config ISOTEE_GUEST_TASK_ENTRY
+	hex "Entry point address of the guest software"
+
+config ISOTEE_GUEST_ROM_BASE
+	hex "Base address of the ROM for guest software"
+
+config ISOTEE_GUEST_ROM_SIZE
+	hex "Size of the ROM for guest software"
+
+config ISOTEE_GUEST_RAM_BASE
+	hex "Base address of the RAM for guest software"
+
+config ISOTEE_GUEST_RAM_SIZE
+	hex "Size of the RAM for guest software"
+
+endif
