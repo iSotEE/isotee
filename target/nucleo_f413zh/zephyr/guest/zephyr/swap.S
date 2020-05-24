@@ -23,7 +23,6 @@ _ASM_FILE_PROLOGUE
 GTEXT(__swap)
 GTEXT(isotee_para_guest_interrupt_handler)
 GTEXT(__return_from_irq)
-GDATA(_k_neg_eagain)
 GDATA(isotee_para_context_interrupt_suppressed)
 
 GDATA(_kernel)

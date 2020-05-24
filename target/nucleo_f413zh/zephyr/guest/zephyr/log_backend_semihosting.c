@@ -13,12 +13,14 @@
 
 static __attribute__((optimize(0)))
 int32_t _semihosting_call(uint32_t service, void *op1) {
-    __asm__("bkpt #0xab");
+	register int32_t ret __asm__("r0");
+    __asm__ volatile("bkpt #0xab": "=r"(ret));
+    return ret;
 }
 
 static int char_out(u8_t *data, size_t length, void *ctx) {
     ARG_UNUSED(ctx);
-    uint32_t params[3] = {2 /*stderr*/, data, length};
+    uint32_t params[3] = {2 /*stderr*/, (uint32_t)data, length};
     _semihosting_call(0x5 /*SYS_WRITE*/, params);
     return length;
 }
